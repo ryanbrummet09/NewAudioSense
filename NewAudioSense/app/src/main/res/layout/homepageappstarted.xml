@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/homepageRootLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:screenOrientation="portrait"
+    android:paddingLeft="12dp"
+    android:paddingRight="12dp"
+    android:orientation="vertical"
+    android:weightSum="1.0"
+    android:background="#000000">
+
+    <Button
+        android:id="@+id/homepageStartSurvey"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight=".35"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/bluebutton"
+        android:onClick="onStartSurvey"
+        android:text="START SURVEY"
+        android:textAllCaps="false"
+        android:textSize="35sp"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"/>
+
+    <Button
+        android:id="@+id/homepageQuitSurvey"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight=".25"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/bluebutton"
+        android:onClick="onIgnoreSurvey"
+        android:text="Ignore / Exit"
+        android:textAllCaps="false"
+        android:textSize="25sp"
+        android:textColor="#FFFFFF"/>
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/outerBotContainer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight=".4"
+        android:orientation="vertical"
+        android:weightSum="1.0"
+        android:background="#000000">
+
+        <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            android:id="@+id/snoozeContainer"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight=".33"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:weightSum="1.0"
+            android:background="#000000">
+
+            <Button
+                android:id="@+id/homepageSnooze"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight=".70"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bluebutton"
+                android:onClick="onSnoozeSurvey"
+                android:text="Snooze"
+                android:textAllCaps="false"
+                android:textSize="20sp"
+                android:textColor="#FFFFFF"/>
+
+            </LinearLayout>
+
+        <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            android:id="@+id/vibrationContainer"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight=".33"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:weightSum="1.0"
+            android:background="#000000">
+
+            <Button
+                android:id="@+id/homepageVibration"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight=".70"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bluebutton"
+                android:onClick="onChangeVibration"
+                android:text="Change to Vibration"
+                android:textAllCaps="false"
+                android:textSize="20sp"
+                android:textColor="#FFFFFF"/>
+
+            </LinearLayout>
+
+        <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            android:id="@+id/staffContainer"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight=".33"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:weightSum="1.0"
+            android:background="#000000">
+
+            <Button
+                android:id="@+id/homepageStaff"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight=".70"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/redbutton"
+                android:onClick="onStaffSettings"
+                android:text="Staff Only"
+                android:textAllCaps="false"
+                android:textSize="20sp"
+                android:textColor="#FFFFFF"/>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+</LinearLayout>

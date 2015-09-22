@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/confirmScreen">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="You have made the following selections.  Press confirm to submit your choices or reject to return to the previous screen"
+        android:gravity="center"
+        android:textSize="20sp"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text=" "
+        android:gravity="left"
+        android:textSize="10sp"/>
+
+    <TextView
+        android:id="@+id/patientIDChoice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="here"
+        android:gravity="left"
+        android:textSize="15sp"/>
+
+    <TextView
+        android:id="@+id/conditionIDChoice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="here"
+        android:gravity="left"
+        android:textSize="15sp"/>
+
+    <TextView
+        android:id="@+id/sessionIDChoice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="here"
+        android:gravity="left"
+        android:textSize="15sp"/>
+
+    <TextView
+        android:id="@+id/randIntervalChoice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="here"
+        android:gravity="left"
+        android:textSize="15sp"/>
+
+    <TextView
+        android:id="@+id/timeoutChoice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="here"
+        android:gravity="left"
+        android:textSize="15sp"/>
+
+    <TextView
+        android:id="@+id/snoozeChoice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="here"
+        android:gravity="left"
+        android:textSize="15sp"/>
+
+    <TextView
+        android:id="@+id/surveyIntervalChoice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="here"
+        android:gravity="left"
+        android:textSize="15sp"/>
+
+    <TextView
+        android:id="@+id/ringSelectionChoice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="here"
+        android:gravity="left"
+        android:textSize="15sp"/>
+
+    <TextView
+        android:id="@+id/startDateChoice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="here"
+        android:gravity="left"
+        android:textSize="15sp"/>
+
+    <TextView
+        android:id="@+id/endDateChoice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="here"
+        android:gravity="left"
+        android:textSize="15sp"/>
+
+    <TextView
+        android:id="@+id/startTimeChoice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="here"
+        android:gravity="left"
+        android:textSize="15sp"/>
+
+    <TextView
+        android:id="@+id/endTimeChoice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="here"
+        android:gravity="left"
+        android:textSize="15sp"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text=" "
+        android:gravity="left"
+        android:textSize="10sp"/>
+
+    <Button
+        android:id="@+id/rejectChoices"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Reject"
+        android:layout_gravity="center_horizontal"
+        android:textSize="40sp" />
+
+    <Button
+        android:id="@+id/confirmChoices"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Confirm"
+        android:layout_gravity="center_horizontal"
+        android:textSize="40sp" />
+
+</LinearLayout>

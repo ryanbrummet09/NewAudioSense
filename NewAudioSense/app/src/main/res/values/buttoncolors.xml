@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="outerblue">#35A4ED</color>
+    <color name="innerblue">#236D9E</color>
+    <color name="innerred">#781A0C</color>
+    <color name="outerred">#B82812</color>
+    <color name="innergreen">#7CFC00</color>
+    <color name="outergreen">#9ACD32</color>
+    <color name="darkouterblue">#4682B4</color>
+    <color name="darkinnerblue">#4169E1</color>
+    <color name="darkoutergreen">#6B8E23</color>
+    <color name="darkinnergreen">#228B22</color>
+
+</resources>
