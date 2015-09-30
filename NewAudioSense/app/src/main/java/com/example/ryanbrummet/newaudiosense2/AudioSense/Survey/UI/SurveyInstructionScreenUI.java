@@ -1,6 +1,9 @@
 package com.example.ryanbrummet.newaudiosense2.AudioSense.Survey.UI;
 
 import android.app.Activity;
+import android.content.Context;
+import android.graphics.Color;
+import android.os.Vibrator;
 import android.util.Log;
 import android.view.Display;
 import android.view.View;
@@ -17,12 +20,16 @@ import com.example.ryanbrummet.newaudiosense2.AudioSense.Survey.Content.SurveyIn
  */
 public class SurveyInstructionScreenUI extends AbstractSingleSelectionSubComponent {
 
-    public SurveyInstructionScreenUI(String id, SurveyInstructionScreenContent content) {
-        super(id,content);
+    private Vibrator vibrator;
+
+    public SurveyInstructionScreenUI(String id, int color, SurveyInstructionScreenContent content) {
+        super(id,color,content);
     }
 
     public void render(Activity activity, Display display, ViewGroup rootView){
         rootView.removeAllViews();
+        rootView.setBackgroundColor(getColor());
+        vibrator = (Vibrator) rootView.getContext().getSystemService(Context.VIBRATOR_SERVICE);
 
         // create spacing params
         LinearLayout.LayoutParams paramTopSpace = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,display.getHeight() / 10);
@@ -62,6 +69,7 @@ public class SurveyInstructionScreenUI extends AbstractSingleSelectionSubCompone
         public void onClick(View view) {
             ((SurveyInstructionScreenContent) getContent()).recordSurveyStartInfo();
             Log.i("SurveyInstructionScreenUI", "Survey Started");
+            vibrator.vibrate(250);
             gotoNextComponent();
         }
     }

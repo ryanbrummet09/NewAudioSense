@@ -1,59 +1,76 @@
 package com.example.ryanbrummet.newaudiosense2.AudioSense.Main;
 
-import java.io.FileOutputStream;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Timer;
-import java.util.TimerTask;
-
 import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.os.PowerManager;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.InputMethodManager;
-import android.widget.LinearLayout;
 import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.CompoundButton;
+import android.widget.LinearLayout;
+import android.widget.Switch;
 import android.widget.Toast;
-import android.util.Log;
 
 import com.example.ryanbrummet.newaudiosense2.AudioSense.Settings.AudioSenseSettingsUI;
 import com.example.ryanbrummet.newaudiosense2.AudioSense.Survey.Content.AudioSense2;
+import com.example.ryanbrummet.newaudiosense2.AudiologyBaseSurveyCode.LogUsage;
 import com.example.ryanbrummet.newaudiosense2.AudiologyBaseSurveyCode.RouteComponents;
 import com.example.ryanbrummet.newaudiosense2.R;
 
+import java.io.FileOutputStream;
+import java.util.ArrayList;
+import java.util.Calendar;
+
 /**
- * Created by ryanbrummet on 8/14/15.
+ * Created by ryanbrummet on 9/24/15.
  */
-public class AudioSenseActivity extends Activity {
+public class AudioSenseActivity extends Activity{
 
     private AudioSense2 survey;
     private LinearLayout rootView;
     protected RouteComponents routeComponents;
-    private Timer timer;
     private boolean unlockSurveyScreen;
-    PowerManager.WakeLock screenOnWakeLock;
-    Intent intent;
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    private SharedPreferences preferences;
+    private PowerManager.WakeLock screenOnWakeLock;
+    private Intent intent;
+    private AudioSenseActivity activity = this;
+    private BroadcastReceiver timeoutReceiver;
+    private LogUsage logUsage;
+
+    protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         this.intent = getIntent();
+
+        logUsage = new LogUsage(this);
+        //logUsage.startLoggingMemUsage();
+
+        timeoutReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                Log.w("ActivityTimoutManager", "Broadcast received");
+                AlarmAlertWakeLock.acquireCpuWakeLock(activity);
+                activity.appTimeout();
+                AlarmAlertWakeLock.releaseCpuLock();
+            }
+        };
 
         PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
         screenOnWakeLock =  powerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK,"ScreenlockTag");
         screenOnWakeLock.acquire();
-        //getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
         Log.i("AudioSenseActivity", "OnCreate Called");
 
-        final SharedPreferences preferences = getSharedPreferences(AudioSenseConstants.sharedPrefName, 0);
+        preferences = getSharedPreferences(AudioSenseConstants.sharedPrefName, 0);
         preferences.edit().putBoolean("uiRunning",true);
 
         if(preferences.getBoolean("unlockSurveyScreen",false)) {
@@ -67,16 +84,17 @@ public class AudioSenseActivity extends Activity {
 
         if(unlockSurveyScreen) {
             appTimeout = AudioSenseConstants.defaultUserSurveyTimeoutInMin * 60000;
+            setContentView(R.layout.homepageappstarted);
         } else {
             if(preferences.getBoolean("userLock",false)) {
-                Toast.makeText(this, "You cannot open the app at this time.  A survey is currently being delivered",Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "You cannot open the app at this time.  A survey is currently being delivered", Toast.LENGTH_LONG).show();
                 finish();
             } else {
                 long currentTime = TimingManager.getCurrentUnixTimeStamp();
                 long timeRemaining = preferences.getLong("nextAudioSurveySample",currentTime) - currentTime - 1;
 
                 if(timeRemaining <= AudioSenseConstants.defaultUserSurveyTimeoutInMin * 30000 && timeRemaining > 0) {
-                    Toast.makeText(this, "You cannot open the app at this time.  A survey is currently being delivered",Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, "You can't open the app at this time.  A survey is currently being delivered",Toast.LENGTH_LONG).show();
                     finish();
                 } else {
                     if(timeRemaining > 0) {
@@ -84,121 +102,139 @@ public class AudioSenseActivity extends Activity {
                     } else {
                         appTimeout = AudioSenseConstants.defaultUserSurveyTimeoutInMin * 60000;
                     }
-
                 }
-
+                setContentView(R.layout.homepageuserstarted);
             }
         }
 
-        timer = new Timer();
+        registerReceiver(timeoutReceiver, new IntentFilter("APP_TIMEOUT"));
 
-        // forces the app to close after a period of time (surveys taking longer than AudioSenseConstants.defaultSurveyTimeoutInMin are discarded)
-        // this is done for two reasons.  first, to avoid the user leaving the app open and forgetting about it.
-        // two, surveys that take a abnormal amount of time indicate subject non compliance.  This will catch this and prevent
-        // a person from being credited with taking a survey (and not taking it seriously).  The timeout is made to be fairly
-        // long (the initial default is set to 10 minutes in the AudioSenseConstants class)
-
-        /*
-        if(startedByService) {
-            setContentView(R.layout.homepageappstarted);
+        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        Intent timeoutIntent = new Intent(this, ActivityTimeoutManager.class);
+        timeoutIntent.setAction("AudioSenseAppTimeout");
+        PendingIntent pendingIntentTimeout = PendingIntent.getBroadcast(this, 0, timeoutIntent, 0);
+        if (android.os.Build.VERSION.SDK_INT < 19) {
+            alarmManager.set(AlarmManager.RTC_WAKEUP, TimingManager.getCurrentUnixTimeStamp() + appTimeout, pendingIntentTimeout);
         } else {
-            setContentView(R.layout.homepageuserstarted);
-        }*/
-
-        timer.schedule(new TimerTask() {
-
-            @Override
-            public void run() {
-                (new Handler(Looper.getMainLooper())).post(new Runnable() {
-
-                    @Override
-                    public void run() {
-                        Log.w("AudioSenseActivity","User Timeout");
-                        if(unlockSurveyScreen) {
-                            preferences.edit().putInt("dailyGivenSurveys", preferences.getInt("dailyGivenSurveys", 0) + 1).commit();
-                            preferences.edit().putInt("totalGivenSurveys", preferences.getInt("totalGivenSurveys", 0) + 1).commit();
-                        }
-                        finish();
-                    }
-                });
-            }
-        }, appTimeout);
-
+            alarmManager.setExact(AlarmManager.RTC_WAKEUP, TimingManager.getCurrentUnixTimeStamp() + appTimeout, pendingIntentTimeout);
+        }
     }
 
-    @Override
-    protected void onStart(){
+    protected void onStart() {
+        Log.i("AudioSenseActivity","onStart Called");
         super.onStart();
-        Log.i("AudioSenseActivity", "OnStart Called");
     }
 
-    @Override
     protected void onResume() {
-        super.onResume();
-        Log.i("AudioSenseActivity", "OnResumed Called");
+        Log.i("AudioSenseActivity","onResume Called");
 
-
-        boolean startedByService = intent.getBooleanExtra("AUDIOSENSE_STARTED_BY_SERVICE",false);
-
-        if(startedByService && unlockSurveyScreen) {
-            setContentView(R.layout.homepageappstarted);
-        } else {
-            setContentView(R.layout.homepageuserstarted);
+        Switch switchWidget;
+        switchWidget = (Switch) findViewById(R.id.homepageVibrationApp);
+        if(switchWidget == null) {
+            switchWidget = (Switch) findViewById(R.id.homepageVibrationUser);
         }
-    }
-
-    @Override
-    protected void onRestart(){
-
-        Log.i("AudioSenseActivity", "OnRestart Called");
         try {
-            screenOnWakeLock.acquire();
-        } catch(RuntimeException e) {}
-        super.onRestart();
+            if (preferences.getBoolean("vibrationOnly", false)) {
+                switchWidget.setChecked(true);
+            } else {
+                switchWidget.setChecked(false);
+            }
+        } catch(Exception e){}
+        switchWidget.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                onChangeVibration();
+            }
+        });
+
+        super.onResume();
     }
 
-    @Override
-    protected void onPause() {
-
+    protected void onRestart() {
         try {
             InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
             imm.toggleSoftInputFromWindow(rootView.getWindowToken(), 0, 0);
+        } catch (RuntimeException e) {}
+        try {
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
             ViewGroup layout = (ViewGroup) (findViewById(R.id.passwordLayout));
-            imm.toggleSoftInputFromWindow(layout.getWindowToken(), 0, 0);
-            layout = (ViewGroup) (findViewById(R.id.settingsRoot));
-            imm.toggleSoftInputFromWindow(layout.getWindowToken(), 0, 0);
-            layout = (ViewGroup) (findViewById(R.id.confirmScreen));
             imm.toggleSoftInputFromWindow(layout.getWindowToken(), 0, 0);
 
         } catch (RuntimeException e) {}
+        try {
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            ViewGroup layout = (ViewGroup) (findViewById(R.id.settingsRoot));
+            imm.toggleSoftInputFromWindow(layout.getWindowToken(), 0, 0);
+
+        } catch (RuntimeException e) {}
+        try {
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            ViewGroup layout = (ViewGroup) (findViewById(R.id.confirmScreen));
+            imm.toggleSoftInputFromWindow(layout.getWindowToken(), 0, 0);
+
+        } catch (RuntimeException e) {}
+
+        Log.i("AudioSenseActivity","onRestart Called");
+        super.onRestart();
+    }
+
+    protected void onPause() {
+        try {
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.toggleSoftInputFromWindow(rootView.getWindowToken(), 0, 0);
+        } catch (RuntimeException e) {}
+        try {
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            ViewGroup layout = (ViewGroup) (findViewById(R.id.passwordLayout));
+            imm.toggleSoftInputFromWindow(layout.getWindowToken(), 0, 0);
+
+        } catch (RuntimeException e) {}
+        try {
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            ViewGroup layout = (ViewGroup) (findViewById(R.id.settingsRoot));
+            imm.toggleSoftInputFromWindow(layout.getWindowToken(), 0, 0);
+
+        } catch (RuntimeException e) {}
+        try {
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            ViewGroup layout = (ViewGroup) (findViewById(R.id.confirmScreen));
+            imm.toggleSoftInputFromWindow(layout.getWindowToken(), 0, 0);
+
+        } catch (RuntimeException e) {}
+
         Log.i("AudioSenseActivity", "OnPause Called");
         try {
-            screenOnWakeLock.release();
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         } catch(RuntimeException e) {}
+        try {
+            screenOnWakeLock.release();
+        } catch(RuntimeException e){}
         super.onPause();
     }
 
-    @Override
     protected void onStop() {
-
-        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         Log.i("AudioSenseActivity", "OnStop Called");
         super.onStop();
     }
 
-    @Override
-    protected void onDestroy(){
-        SharedPreferences preferences = getSharedPreferences(AudioSenseConstants.sharedPrefName, 0);
+    protected void onDestroy() {
         preferences.edit().putBoolean("uiRunning",false).commit();
         preferences.edit().putBoolean("unlockSurveyScreen",false).commit();
-        try {
-            intent.removeExtra("AUDIOSENSE_STARTED_BY_SERVICE");
-        }catch(NullPointerException e){}
-        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         Log.i("AudioSenseActivity", "OnDestroy Called");
 
-        timer.cancel();
-        timer.purge();
+        try {
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        } catch(RuntimeException e) {}
+
+        try {
+            screenOnWakeLock.release();
+        } catch(RuntimeException e) {}
+
+        try {
+            unregisterReceiver(timeoutReceiver);
+        } catch(RuntimeException e) {}
+        unlockSurveyScreen = false;
+        //logUsage.stopLoggingMemUsage();
+
         super.onDestroy();
     }
 
@@ -221,8 +257,6 @@ public class AudioSenseActivity extends Activity {
         preferences.edit().putInt("running",((testing) ? 1 : 0) + 1).commit();
 
         if(testing) {
-            timer.cancel();
-            timer.purge();
 
             setContentView(R.layout.homepageappstarted);
 
@@ -281,19 +315,16 @@ public class AudioSenseActivity extends Activity {
     }
 
     public void onStartSurvey(View view) {
-        SharedPreferences preferences = getSharedPreferences(AudioSenseConstants.sharedPrefName, 0);
         Log.i("AudioSenseActivity", "OnStartSurvey Called");
         rootView = ((LinearLayout) findViewById(R.id.homepageRootLayout));
-        survey = new AudioSense2("AudioSense2",(int) Math.ceil((double) preferences.getInt("surveyInterval",3) / 60), this, rootView);
+        survey = new AudioSense2("AudioSense2",preferences.getInt("surveyInterval",90), this, rootView);
         routeComponents = new RouteComponents(this, rootView, survey, survey.getComponents());
         routeComponents.route(0);
     }
 
     public void onIgnoreSurvey(View view) {
-        timer.cancel();
-        timer.purge();
 
-        SharedPreferences preferences = getSharedPreferences(AudioSenseConstants.sharedPrefName, 0);
+        Log.w("AudioSenseActivity", "onIgnoredSurvey");
 
         preferences.edit().putInt("dailyGivenSurveys",preferences.getInt("dailyGivenSurveys",0) + 1).commit();
         preferences.edit().putInt("totalGivenSurveys",preferences.getInt("totalGivenSurveys",0) + 1).commit();
@@ -304,33 +335,32 @@ public class AudioSenseActivity extends Activity {
     }
 
     public void onExitSurvey(View view){
-        timer.cancel();
-        timer.purge();
-
         finish();
     }
 
     public void onSnoozeSurvey(View view) {
 
-        SharedPreferences preferences = getSharedPreferences(AudioSenseConstants.sharedPrefName, 0);
+        Log.w("AudioSenseActivity", "onSnoozeCalled");
 
         if(preferences.getInt("running",1) != 2) {
 
-            timer.cancel();
-            timer.purge();
+            try {
+                TimingManager.cancelAudioSurveySample(getApplicationContext());
+                TimingManager.rescheduleAudioSurveySample(getApplicationContext(), true, unlockSurveyScreen, false);
+                Toast.makeText(this, "Next alarm will not occur for at least " + Integer.toString(preferences.getInt("snoozeTime", AudioSenseConstants.defaultSnooze)) + " minutes", Toast.LENGTH_LONG).show();
+                finish();
+            } catch (ArrayIndexOutOfBoundsException e){
+                Toast.makeText(this,"Disabled: There is no current study running",Toast.LENGTH_LONG).show();
+            }
 
-            TimingManager.cancelAudioSurveySample(getApplicationContext());
-            TimingManager.rescheduleAudioSurveySample(getApplicationContext(), true);
-            Toast.makeText(this,"Next alarm will not occur for at least " + Integer.toString(preferences.getInt("snoozeTime",AudioSenseConstants.defaultSnooze)) + " minutes",Toast.LENGTH_LONG).show();
-            finish();
         } else {
             Toast.makeText(this,"Disabled: There is no current study running",Toast.LENGTH_LONG).show();
         }
     }
 
-    public void onChangeVibration(View view) {
+    public void onChangeVibration() {
 
-        SharedPreferences preferences = getSharedPreferences(AudioSenseConstants.sharedPrefName, 0);
+        Log.w("AudioSenseActivity", "onChangeVibration");
 
         if(preferences.getInt("running",1) != 2) {
 
@@ -347,18 +377,11 @@ public class AudioSenseActivity extends Activity {
     }
 
     public void onStaffSettings(View view) {
-
         new AudioSenseSettingsUI(this);
     }
 
     public void onSubmitSurvey(View view) {
-
-        SharedPreferences preferences = getSharedPreferences(AudioSenseConstants.sharedPrefName, 0);
         if(preferences.getInt("running",1) != 2) {
-
-            timer.cancel();
-            timer.purge();
-
 
             preferences.edit().putInt("dailyTakenSurveys", preferences.getInt("dailyTakenSurveys", 0) + 1).commit();
             preferences.edit().putInt("totalTakenSurveys", preferences.getInt("totalTakenSurveys", 0) + 1).commit();
@@ -379,13 +402,13 @@ public class AudioSenseActivity extends Activity {
             }
 
             TimingManager.cancelAudioSurveySample(getApplicationContext());
-            TimingManager.rescheduleAudioSurveySample(getApplicationContext(), false);
+            TimingManager.rescheduleAudioSurveySample(getApplicationContext(), false, unlockSurveyScreen,false);
 
         }
 
-        finish();
+        Log.w("AudioSenseActivity", "survey finished");
 
-        Log.e("AudioSenseActivity", "survey finished");
+        finish();
     }
 
     public void onBackPressed() {
@@ -427,7 +450,6 @@ public class AudioSenseActivity extends Activity {
     }
 
     private String getSurveySampleFileName() {
-        SharedPreferences preferences =  getSharedPreferences(AudioSenseConstants.sharedPrefName, 0);
 
         int patientID = preferences.getInt("patientID", -1);
         int conditionID = preferences.getInt("conditionID", -1);
@@ -451,16 +473,18 @@ public class AudioSenseActivity extends Activity {
         intent.removeExtra("AUDIOSENSE_STARTED_BY_SERVICE");
     }
 
-    public void finish() {
-        try {
-            timer.cancel();
-            timer.purge();
-        }catch(Exception e){}
+    public void appTimeout() {
 
-        try {
-            screenOnWakeLock.release();
-        } catch(RuntimeException e) {}
-        super.finish();
+        SharedPreferences preferences = getSharedPreferences(AudioSenseConstants.sharedPrefName, 0);
+
+        Log.w("AudioSenseActivity","User Timeout");
+        if(unlockSurveyScreen) {
+            preferences.edit().putInt("dailyGivenSurveys", preferences.getInt("dailyGivenSurveys", 0) + 1).commit();
+            preferences.edit().putInt("totalGivenSurveys", preferences.getInt("totalGivenSurveys", 0) + 1).commit();
+        }
+
+        finish();
     }
+
 
 }

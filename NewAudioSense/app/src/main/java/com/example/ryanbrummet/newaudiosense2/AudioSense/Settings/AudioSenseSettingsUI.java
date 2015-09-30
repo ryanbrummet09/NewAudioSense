@@ -304,12 +304,12 @@ public class AudioSenseSettingsUI {
                     if(Integer.parseInt(surveyTimeout.getText().toString()) <= 0) {
                         Toast.makeText(activity, "surveyTimeout must be greater than 0", Toast.LENGTH_LONG).show();
                         return;
-                    }/*
-                    if(Integer.parseInt(surveyInterval.getText().toString()) <= AudioSenseConstants.defaultUserSurveyTimeoutInMin) {
-                        Toast.makeText(activity, "surveyInterval must be larger than the app timeout which is " +
+                    }
+                    if(Integer.parseInt(surveyInterval.getText().toString()) <= 2 * AudioSenseConstants.defaultUserSurveyTimeoutInMin) {
+                        Toast.makeText(activity, "surveyInterval must be twice as large as the app timeout which is " +
                                 Integer.toString(AudioSenseConstants.defaultUserSurveyTimeoutInMin) + " minutes", Toast.LENGTH_LONG).show();
                         return;
-                    }*/
+                    }
 
                     // check durations are compatible with each other
                     /*

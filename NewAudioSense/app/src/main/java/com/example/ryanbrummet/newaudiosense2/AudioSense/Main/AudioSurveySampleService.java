@@ -1,5 +1,9 @@
 package com.example.ryanbrummet.newaudiosense2.AudioSense.Main;
 
+import android.app.AlarmManager;
+import android.app.Notification;
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -21,7 +25,7 @@ import android.util.Log;
 import android.view.Display;
 
 import com.example.ryanbrummet.newaudiosense2.AudioSense.Bluetooth.DiscoverBlueToothDevices;
-import com.example.ryanbrummet.newaudiosense2.AudiologyBaseSurveyCode.LogMemUsage;
+import com.example.ryanbrummet.newaudiosense2.AudiologyBaseSurveyCode.LogUsage;
 import com.example.ryanbrummet.newaudiosense2.R;
 
 import java.io.FileNotFoundException;
@@ -50,19 +54,34 @@ public class AudioSurveySampleService  extends Service{
     private int surveyTimeout;
     private AudioManager audioManager;
     private MediaPlayer mediaPlayer;
-    private AudioSenseAlarmManager alarmManager;
+    private AudioSenseAlarmManager audioSenseAlarmManager;
     private AnimateAlarm animateAlarm;
     private Vibrator vibrator;
-    private final LogMemUsage logMemUsage = new LogMemUsage(this);
+    private final LogUsage logUsage = new LogUsage(this);
+    private AlarmManager alarmManager;
+    private PendingIntent pendingIntentFailure;
 
     public IBinder onBind(Intent intent) {
         return null;
     }
 
     public int onStartCommand(Intent intent, int flags, int startId) {
-        //logMemUsage.startLoggingMemUsage();
+        //logUsage.startLoggingMemUsage();
+
+        startForeground( 99969, new Notification() );
 
         SharedPreferences preferences = getSharedPreferences(AudioSenseConstants.sharedPrefName, 0);
+
+        alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        Intent failureIntent = new Intent(this, SurveyFailureManager.class);
+        failureIntent.setAction("SurveyFailed");
+        pendingIntentFailure = PendingIntent.getBroadcast(this, 0, failureIntent, 0);
+        if (android.os.Build.VERSION.SDK_INT < 19) {
+            alarmManager.set(AlarmManager.RTC_WAKEUP, TimingManager.getCurrentUnixTimeStamp() + 120000 * AudioSenseConstants.defaultAudioSampleLength + preferences.getInt("surveyTimeout",1) * 60000, pendingIntentFailure);
+        } else {
+            alarmManager.setExact(AlarmManager.RTC_WAKEUP, TimingManager.getCurrentUnixTimeStamp() + 120000 * AudioSenseConstants.defaultAudioSampleLength + preferences.getInt("surveyTimeout",1) * 60000, pendingIntentFailure);
+        }
+
         preferences.edit().putBoolean("userLock",true).commit();
 
         timer = new Timer();
@@ -109,6 +128,53 @@ public class AudioSurveySampleService  extends Service{
 
         SharedPreferences preferences = getSharedPreferences(AudioSenseConstants.sharedPrefName, 0);
 
+        if(isScreenOn(this)) {
+            timer.schedule(new TimerTask() {
+
+                @Override
+                public void run() {
+                    (new Handler(Looper.getMainLooper())).post(new Runnable() {
+
+                        @Override
+                        public void run() {
+                            stopAlarm(true, false);
+                            Log.w("AudioSurveySample", "User was using phone and survey was displayed");
+                        }
+                    });
+
+                }
+            }, 3000);
+        } else {
+
+            IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_ON);
+            filter.addAction(Intent.ACTION_SCREEN_OFF);
+            audioSenseAlarmManager = new AudioSenseAlarmManager();
+            registerReceiver(audioSenseAlarmManager, filter);
+
+            timer.schedule(new TimerTask() {
+
+                @Override
+                public void run() {
+                    (new Handler(Looper.getMainLooper())).post(new Runnable() {
+
+                        @Override
+                        public void run() {
+
+                            try{
+                                unregisterReceiver(audioSenseAlarmManager);
+                                Thread.sleep(1000);
+                            }catch(Exception e){
+                                e.printStackTrace();
+                            }
+                            stopAlarm(false, false);
+                            Log.w("AudioSurveySample", "User Failed to answer Survey Alarm");
+                        }
+                    });
+
+                }
+            }, surveyTimeout * 60000);
+        }
+
         if(!preferences.getBoolean("vibrationOnly",false)) {
             audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
             audioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
@@ -142,6 +208,7 @@ public class AudioSurveySampleService  extends Service{
             }
             mediaPlayer.setLooping(true);
             mediaPlayer.start();
+            Log.w("AudioSenseSampleService","MediaPlayer playing");
         }
 
         animateAlarm = new AnimateAlarm(this);
@@ -149,56 +216,16 @@ public class AudioSurveySampleService  extends Service{
         long[] pattern = {0, 500, 1000};
         vibrator.vibrate(pattern, 0);
 
-        if(isScreenOn(this)) {
-            timer.schedule(new TimerTask() {
-
-                @Override
-                public void run() {
-                    (new Handler(Looper.getMainLooper())).post(new Runnable() {
-
-                        @Override
-                        public void run() {
-                            stopAlarm(true, false);
-                            Log.w("AudioSurveySample", "User was using phone and survey was displayed");
-                        }
-                    });
-
-                }
-            }, 3000);
-        } else {
-
-            IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_ON);
-            filter.addAction(Intent.ACTION_SCREEN_OFF);
-            alarmManager = new AudioSenseAlarmManager();
-            registerReceiver(alarmManager, filter);
-
-            timer.schedule(new TimerTask() {
-
-                @Override
-                public void run() {
-                    (new Handler(Looper.getMainLooper())).post(new Runnable() {
-
-                        @Override
-                        public void run() {
-                            unregisterReceiver(alarmManager);
-                            try{ Thread.sleep(1000); }catch(InterruptedException e){ }
-                            stopAlarm(false, false);
-                            Log.w("AudioSurveySample", "User Failed to answer Survey Alarm");
-                        }
-                    });
-
-                }
-            }, surveyTimeout * 60000);
-        }
-
     }
 
     public void stopAlarm(boolean userAnswered, boolean unRegisterAlarmReceiver) {
-        //logMemUsage.stopLoggingMemUsage();
+
         if(unRegisterAlarmReceiver) {
             try {
-                unregisterReceiver(alarmManager);
-            } catch(Exception e){}
+                unregisterReceiver(audioSenseAlarmManager);
+            } catch(Exception e){
+                e.printStackTrace();
+            }
         }
 
         if(canStopAlarm) {
@@ -214,15 +241,17 @@ public class AudioSurveySampleService  extends Service{
             animateAlarm.stopAlarm();
             animateAlarm = null;
             vibrator.cancel();
-            TimingManager.rescheduleAudioSurveySample(getApplicationContext(), false);
+            TimingManager.rescheduleAudioSurveySample(getApplicationContext(), false,false,false);
             preferences.edit().putBoolean("userLock",false).commit();
+            alarmManager.cancel(pendingIntentFailure);
+            //logUsage.stopLoggingMemUsage();
             if (userAnswered) {
                 enterSurvey();
             } else {
                 preferences.edit().putInt("dailyGivenSurveys",preferences.getInt("dailyGivenSurveys",0) + 1).commit();
                 preferences.edit().putInt("totalGivenSurveys",preferences.getInt("totalGivenSurveys",0) + 1).commit();
-                //TimingManager.rescheduleAudioSurveySample(getApplicationContext(), false);
                 Log.w("AudioSurveySample", "Ending Audio Survey Sampling");
+                stopForeground(true);
                 AlarmAlertWakeLock.releaseCpuLock();
                 stopSelf();
             }
@@ -240,6 +269,7 @@ public class AudioSurveySampleService  extends Service{
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.putExtra("AUDIOSENSE_STARTED_BY_SERVICE", true);
         startActivity(intent);
+        stopForeground(true);
         AlarmAlertWakeLock.releaseCpuLock();
         stopSelf();
     }

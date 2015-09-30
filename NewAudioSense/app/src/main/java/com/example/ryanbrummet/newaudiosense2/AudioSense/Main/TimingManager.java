@@ -63,14 +63,14 @@ public class TimingManager  extends BroadcastReceiver {
             Log.i("AudioSenseTimingManager", "AudioSenseAudioSurveySample");
 
             if(preferences.getBoolean("uiRunning",true)) {
-                rescheduleAudioSurveySample(context, true);
+                rescheduleAudioSurveySample(context, true,false,false);
             } else {
                 runAudioSurveySample(context, getAudioSampleFileName(preferences, true));
             }
         } else if (intent.getAction().equals("android.intent.action.BOOT_COMPLETED")) {
             Log.i("AudioSenseTimingManager", "BOOT_COMPLETED");
             rescheduleAudioSample(context);
-            rescheduleAudioSurveySample(context, false);
+            rescheduleAudioSurveySample(context, false,false,false);
         } else {
             throw new RuntimeException("This should never happen: " + intent.getAction());
         }
@@ -140,7 +140,7 @@ public class TimingManager  extends BroadcastReceiver {
         }
     }
 
-    public static void rescheduleAudioSurveySample(Context context, boolean snooze) {
+    public static void rescheduleAudioSurveySample(Context context, boolean snooze,  boolean appInit, boolean surveyFailed) {
 
         Log.e("TimingManager","reschedule ran");
 
@@ -167,21 +167,30 @@ public class TimingManager  extends BroadcastReceiver {
         long interval;
         Long nextUnixTimeStamp;
 
-        if(snooze) {
-            if(preferences.getLong("nextAudioSurveySample",currentUnixTimeStamp) <
-                    (((long) preferences.getInt("snoozeTime", AudioSenseConstants.defaultSnooze)) * 60000) + getCurrentUnixTimeStamp()) {
-                interval = ((long) preferences.getInt("snoozeTime", AudioSenseConstants.defaultSnooze)) * 60000;
-                nextUnixTimeStamp = currentUnixTimeStamp + interval;
-            } else {
-                interval = 0;
-                nextUnixTimeStamp = preferences.getLong("nextAudioSurveySample",currentUnixTimeStamp);
-            }
-        } else {
-            interval = ((long) (preferences.getInt("surveyInterval",AudioSenseConstants.defaultSurveyInterval) +
-                    ((double) preferences.getInt("randInterval", AudioSenseConstants.defaultRandInterval)) * ((Math.random() * 2) - 1))) * 60000;
+        if(surveyFailed) {
+            interval = ((long) AudioSenseConstants.defaultFailureTimeout) * 60000;
             nextUnixTimeStamp = currentUnixTimeStamp + interval;
+        } else {
+            if (snooze) {
+                if (appInit) {
+                    interval = ((long) preferences.getInt("snoozeTime", AudioSenseConstants.defaultSnooze)) * 60000;
+                    nextUnixTimeStamp = currentUnixTimeStamp + interval;
+                } else {
+                    if (preferences.getLong("nextAudioSurveySample", currentUnixTimeStamp) <
+                            (((long) preferences.getInt("snoozeTime", AudioSenseConstants.defaultSnooze)) * 60000) + getCurrentUnixTimeStamp()) {
+                        interval = ((long) preferences.getInt("snoozeTime", AudioSenseConstants.defaultSnooze)) * 60000;
+                        nextUnixTimeStamp = currentUnixTimeStamp + interval;
+                    } else {
+                        interval = 0;
+                        nextUnixTimeStamp = preferences.getLong("nextAudioSurveySample", currentUnixTimeStamp);
+                    }
+                }
+            } else {
+                interval = ((long) (preferences.getInt("surveyInterval", AudioSenseConstants.defaultSurveyInterval) +
+                        ((double) preferences.getInt("randInterval", AudioSenseConstants.defaultRandInterval)) * ((Math.random() * 2) - 1))) * 60000;
+                nextUnixTimeStamp = currentUnixTimeStamp + interval;
+            }
         }
-
 
         if( nextUnixTimeStamp >= startTime && nextUnixTimeStamp < endTime) {
 
@@ -252,7 +261,7 @@ public class TimingManager  extends BroadcastReceiver {
         Intent i = new Intent(context, AudioSurveySampleService.class);
         i.putExtra("fileOutPutLocation",fileOutputLocation);
         i.putExtra("enteringSurvey", true);
-        i.putExtra("surveyTimeout",1);
+        i.putExtra("surveyTimeout",preferences.getInt("surveyTimeout",1));
         context.startService(i);
     }
 

@@ -21,9 +21,11 @@ public class BlueToothDeviceHandler implements BluetoothAdapter.LeScanCallback {
 
     @Override
     public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
-        Log.w("BlueToothDeviceHandler","LE BT device found");
-        deviceNames.add(device.getName());
-        deviceRSSI.add(rssi);
+        if(!deviceNames.contains(device.getName() + "@" + device.getAddress())) {
+            Log.w("BlueToothDeviceHandler", "LE BT device found");
+            deviceNames.add(device.getName() + "@" + device.getAddress());
+            deviceRSSI.add(rssi);
+        }
     }
 
     public ArrayList<String> getDeviceNames() {

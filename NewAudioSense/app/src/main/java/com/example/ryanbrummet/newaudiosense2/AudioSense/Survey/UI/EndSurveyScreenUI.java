@@ -1,7 +1,10 @@
 package com.example.ryanbrummet.newaudiosense2.AudioSense.Survey.UI;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.os.Vibrator;
 import android.view.Display;
 import android.view.Gravity;
 import android.view.View;
@@ -20,13 +23,17 @@ import com.example.ryanbrummet.newaudiosense2.AudiologyBaseSurveyCode.AbstractSi
  */
 public class EndSurveyScreenUI extends AbstractSingleSelectionSubComponent {
 
-    public EndSurveyScreenUI(String id, EndSurveyScreenContent content) {
-        super(id,content);
+    private Vibrator vibrator;
+
+    public EndSurveyScreenUI(String id, int color, EndSurveyScreenContent content) {
+        super(id,color,content);
     }
 
     public void render(Activity activity, Display display, ViewGroup rootView) {
         // remove all current views from root view
         rootView.removeAllViews();
+        rootView.setBackgroundColor(getColor());
+        vibrator = (Vibrator) rootView.getContext().getSystemService(Context.VIBRATOR_SERVICE);
 
         SharedPreferences preferences = activity.getSharedPreferences(AudioSenseConstants.sharedPrefName, 0);
         int surveysTakenToday = preferences.getInt("dailyTakenSurveys",0) + 1;
@@ -126,6 +133,7 @@ public class EndSurveyScreenUI extends AbstractSingleSelectionSubComponent {
         public void onClick(View view) {
             try {
                 getContent().setResponse("",0);
+                vibrator.vibrate(250);
                 gotoNextComponent();
             } catch (NullPointerException e) {
                 Toast.makeText(activity, "Please select an option", Toast.LENGTH_SHORT).show();

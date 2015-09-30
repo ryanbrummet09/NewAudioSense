@@ -2,6 +2,7 @@ package com.example.ryanbrummet.newaudiosense2.AudioSense.Survey.UI;
 
 import android.app.Activity;
 import android.graphics.Color;
+import android.os.Vibrator;
 import android.text.InputType;
 import android.view.Display;
 import android.view.Gravity;
@@ -33,9 +34,10 @@ public class UserInputInfoUI extends AbstractSingleSelectionSubComponent{
     private final UserInputInfoContent content;
     private boolean toggle;
     private CustomEditText editText;
+    private Vibrator vibrator;
 
-    public UserInputInfoUI(String id, UserInputInfoContent content){
-        super(id,content);
+    public UserInputInfoUI(String id, int color, UserInputInfoContent content){
+        super(id,color,content);
         this.content = content;
         this.toggle = true;
         editText = null;
@@ -46,6 +48,8 @@ public class UserInputInfoUI extends AbstractSingleSelectionSubComponent{
 
         // remove all current views
         rootView.removeAllViews();
+        vibrator = (Vibrator) rootView.getContext().getSystemService(Context.VIBRATOR_SERVICE);
+        rootView.setBackgroundColor(getColor());
 
         // layout params
         LinearLayout.LayoutParams paramFirstSpace = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
@@ -171,6 +175,7 @@ public class UserInputInfoUI extends AbstractSingleSelectionSubComponent{
                 InputMethodManager imm = (InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE);
                 imm.toggleSoftInputFromWindow(rootView.getWindowToken(), 0, 0);
                 content.setResponse(editText.getText().toString(),1);
+                vibrator.vibrate(250);
                 gotoNextComponent();
             }
         }
@@ -193,6 +198,7 @@ public class UserInputInfoUI extends AbstractSingleSelectionSubComponent{
             InputMethodManager imm = (InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE);
             imm.toggleSoftInputFromWindow(rootView.getWindowToken(), 0,0);
             resetUI();
+            vibrator.vibrate(250);
             gotoPreviousComponent();
         }
     }

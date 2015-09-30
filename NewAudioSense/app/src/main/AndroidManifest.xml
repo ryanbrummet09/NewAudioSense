@@ -68,6 +68,14 @@
             android:enabled="true"
             android:name=".AudioSense.Main.EndStudyManager"/>
 
+        <receiver
+            android:enabled="true"
+            android:name=".AudioSense.Main.ActivityTimeoutManager"/>
+
+        <receiver
+            android:enabled="true"
+            android:name=".AudioSense.Main.SurveyFailureManager"/>
+
         <service
             android:name=".AudioSense.Main.AudioSampleService"
             android:permission="android.permission.RECORD_AUDIO"

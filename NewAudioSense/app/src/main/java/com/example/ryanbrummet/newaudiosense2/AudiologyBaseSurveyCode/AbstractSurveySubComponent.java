@@ -1,6 +1,7 @@
 package com.example.ryanbrummet.newaudiosense2.AudiologyBaseSurveyCode;
 
 import android.app.Activity;
+import android.graphics.Color;
 import android.view.Display;
 import android.view.ViewGroup;
 
@@ -11,10 +12,12 @@ public abstract class AbstractSurveySubComponent extends AbstractSurveyRootCompo
 
     private RouteComponents routeComponents;
     private int thisComponentIndex;
+    private int color;
 
-    public AbstractSurveySubComponent(String componentID) {
+    public AbstractSurveySubComponent(String componentID, int color) {
         super(componentID);
         this.routeComponents = null;
+        this.color = color;
         this.thisComponentIndex = -2; //this is -2 for a reason.  We want to make sure that if this value
                                       // has not been "initialized" and gotoNextComponent() is called
                                       // that an error will be thrown.
@@ -41,6 +44,10 @@ public abstract class AbstractSurveySubComponent extends AbstractSurveyRootCompo
 
     public int getThisComponentIndex(){
         return thisComponentIndex;
+    }
+
+    public int getColor() {
+        return color;
     }
 
 

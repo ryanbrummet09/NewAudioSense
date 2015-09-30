@@ -16,7 +16,7 @@ public abstract class AbstractSingleSelectionContent {
     public AbstractSingleSelectionContent(String instructionQuestion) {
         this.instructionQuestion = instructionQuestion;
         this.responseContent = new ArrayList<String>();
-        responseContent.add(0,"-1");
+        responseContent.add(0,"NaN");
         responseIndex = -1;
     }
 

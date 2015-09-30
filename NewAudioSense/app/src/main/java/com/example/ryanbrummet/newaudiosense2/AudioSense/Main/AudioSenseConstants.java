@@ -44,6 +44,9 @@ public class AudioSenseConstants {
     public static final int defaultAudioSampleInterval = 2; // 60
     public static final int defaultAudioSampleLength = 1;
 
+    // handles failures
+    public static final int defaultFailureTimeout = 1;
+
     // in millisec
     public static final int defaultAudioSampleStartDelay = 5000;
 

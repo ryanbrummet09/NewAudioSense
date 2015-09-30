@@ -23,89 +23,78 @@ import java.util.TimerTask;
  */
 public class DiscoverBlueToothDevices {
 
-    public static void findBlueToothDevices(Context context, final String fileName) {
+    public static void findBlueToothDevices(final Context context, final String fileName) {
         Timer timer = new Timer();
 
-        boolean devicesConnected = false;
-
+        // record currently connected devices
         BluetoothManager bluetoothManager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
         final BlueToothDeviceHandler btDeviceHandler = new BlueToothDeviceHandler();
         final ArrayList<BluetoothDevice> devices = (ArrayList<BluetoothDevice>) bluetoothManager.getConnectedDevices(BluetoothProfile.GATT);
         final ArrayList<Integer> deviceRSSI = new ArrayList<Integer>();
+
         for(BluetoothDevice device : devices) {
+            Log.e("Device",device.getName());
             if(device.getType() == BluetoothDevice.DEVICE_TYPE_LE) {
-                if(device.getName().equals("User's Hearing Aids")) {
-                    devicesConnected = true;
-                    break;
-                }
-            }
-        }
+                BluetoothGatt mBluetoothGatt1 = device.connectGatt(context, false, new BluetoothGattCallback() {
 
-        if(devicesConnected) {
-            for(BluetoothDevice device : devices) {
-                Log.e("Device",device.getName());
-                if(device.getType() == BluetoothDevice.DEVICE_TYPE_LE) {
-                    if (device.getName().equals("User's Hearing Aids")) {
-                        BluetoothGatt mBluetoothGatt1 = device.connectGatt(context, false, new BluetoothGattCallback() {
-
-                            @Override
-                            public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status){
-                                deviceRSSI.add(rssi);
-                            }
-                        });
-                        try {
-                            Thread.sleep(2000);
-                        }catch(InterruptedException e) {};
-                        mBluetoothGatt1.readRemoteRssi();
-                        try {
-                            Thread.sleep(2000);
-                        }catch(InterruptedException e) {};
-
+                    @Override
+                    public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status){
+                        deviceRSSI.add(rssi);
                     }
+                });
+                try {
+                    Thread.sleep(2000);
+                }catch(InterruptedException e) {
+                    e.printStackTrace();
+                }
+                mBluetoothGatt1.readRemoteRssi();
+                try {
+                    Thread.sleep(2000);
+                }catch(InterruptedException e) {
+                    e.printStackTrace();
                 }
             }
-
-            FileOutputStream os = null;
-            try {
-                os = new FileOutputStream(fileName);
-                for (int i = 0; i < devices.size(); i++) {
-                    os.write(("BlueTooth:" + devices.get(i).getName() + "," + Integer.toString(deviceRSSI.get(i)) + "\n").getBytes());
-                }
-                os.close();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-        } else {
-
-            final BluetoothAdapter btAdapter = bluetoothManager.getAdapter();
-            btAdapter.startLeScan(btDeviceHandler);
-
-            timer.schedule(new TimerTask() {
-
-                @Override
-                public void run() {
-                    (new Handler(Looper.getMainLooper())).post(new Runnable() {
-
-                        @Override
-                        public void run() {
-                            btAdapter.stopLeScan(btDeviceHandler);
-                            FileOutputStream os = null;
-                            try {
-                                os = new FileOutputStream(fileName);
-                                for (int i = 0; i < btDeviceHandler.getDeviceNames().size(); i++) {
-                                    os.write(("BlueTooth:" + btDeviceHandler.getDeviceNames().get(i) + "," + Integer.toString(btDeviceHandler.getDeviceRSSI().get(i)) + "\n").getBytes());
-                                }
-                                os.close();
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    });
-
-                }
-            }, AudioSenseConstants.defaultAudioSampleLength * 15000);
         }
+
+        FileOutputStream os = null;
+        try {
+            os = new FileOutputStream(fileName);
+            for (int i = 0; i < devices.size(); i++) {
+                os.write(("BlueTooth:" + devices.get(i).getName() + "," + Integer.toString(deviceRSSI.get(i)) + "\n").getBytes());
+            }
+            os.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        // record devices via scanning that arent currently connected
+        final BluetoothAdapter btAdapter = bluetoothManager.getAdapter();
+        btAdapter.startLeScan(btDeviceHandler);
+
+        timer.schedule(new TimerTask() {
+
+            @Override
+            public void run() {
+                (new Handler(Looper.getMainLooper())).post(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        btAdapter.stopLeScan(btDeviceHandler);
+
+                        try {
+                            FileOutputStream os = new FileOutputStream(fileName, true);
+                            for (int i = 0; i < btDeviceHandler.getDeviceNames().size(); i++) {
+                                os.write(("BlueTooth:" + btDeviceHandler.getDeviceNames().get(i) + "," + Integer.toString(btDeviceHandler.getDeviceRSSI().get(i)) + "\n").getBytes());
+                            }
+                            os.close();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+
+            }
+        }, AudioSenseConstants.defaultAudioSampleLength * 10000);
     }
 
 }

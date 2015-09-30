@@ -16,9 +16,9 @@ Credit to authors of first audioSense
  */
 public class AnimateAlarm {
     //private static final SharedPreferences;
-    private static final int FLASH_PERIOD = 250;
-    private final static int FLASH_COUNT = 240;
-    protected int flashes = FLASH_COUNT;
+    private static int FLASH_PERIOD = 250;
+    private static int FLASH_COUNT = 240;
+    protected int flashes;
     protected Camera camera = null;
 
     private Runnable flashTask = new Runnable() {
@@ -64,6 +64,7 @@ public class AnimateAlarm {
     // http://stackoverflow.com/questions/8876843/led-flashlight-on-galaxy-nexus-controllable-by-what-api
     public AnimateAlarm(Context context) {
         SharedPreferences preferences = context.getSharedPreferences(AudioSenseConstants.sharedPrefName, 0);
+        flashes = FLASH_COUNT * preferences.getInt("surveyTimeout",1);
 
         try {
             Log.e("Camera","started");

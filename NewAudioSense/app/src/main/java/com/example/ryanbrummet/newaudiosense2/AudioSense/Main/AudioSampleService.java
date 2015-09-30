@@ -1,5 +1,6 @@
 package com.example.ryanbrummet.newaudiosense2.AudioSense.Main;
 
+import android.app.Notification;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -13,7 +14,7 @@ import android.media.MediaRecorder;
 import android.util.Log;
 
 import com.example.ryanbrummet.newaudiosense2.AudioSense.Bluetooth.DiscoverBlueToothDevices;
-import com.example.ryanbrummet.newaudiosense2.AudiologyBaseSurveyCode.LogMemUsage;
+import com.example.ryanbrummet.newaudiosense2.AudiologyBaseSurveyCode.LogUsage;
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -41,7 +42,7 @@ public class AudioSampleService extends Service{
     private Thread recordingThread = null;
     private Timer timer;
     private Context context;
-    private final LogMemUsage logMemUsage = new LogMemUsage(this);
+    private final LogUsage logUsage = new LogUsage(this);
 
 
     public IBinder onBind(Intent intent) {
@@ -52,7 +53,11 @@ public class AudioSampleService extends Service{
     public int onStartCommand(Intent intent, int flags, int startId) {
         this.context = this;
 
-        //logMemUsage.startLoggingMemUsage();
+        startForeground( 99996, new Notification() );
+
+        //TimingManager.rescheduleAudioSample(context);
+
+        //logUsage.startLoggingMemUsage();
 
         try {
             fileOutputLocation = intent.getStringExtra("fileOutPutLocation");
@@ -84,9 +89,10 @@ public class AudioSampleService extends Service{
                     @Override
                     public void run() {
                         stopRecording();
-                        //logMemUsage.stopLoggingMemUsage();
+                        //logUsage.stopLoggingMemUsage();
                         Log.w("AudioSample", "Stopped");
-                        TimingManager.rescheduleAudioSample(context);
+                        //TimingManager.rescheduleAudioSample(context);
+                        stopForeground(true);
                         AlarmAlertWakeLock.releaseCpuLock();
                         stopSelf();
                     }

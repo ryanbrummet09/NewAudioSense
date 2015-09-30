@@ -1,8 +1,10 @@
 package com.example.ryanbrummet.newaudiosense2.AudioSense.Survey.UI;
 
 import android.app.Activity;
+import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.os.Vibrator;
 import android.view.Display;
 import android.view.Gravity;
 import android.view.View;
@@ -32,11 +34,12 @@ public class GHABPComponentUI extends AbstractSingleSelectionSubComponent {
     private Button yesButton;
     private Button noButton;
     private final boolean omitDescription;
+    private Vibrator vibrator;
 
-    public GHABPComponentUI(String id, GHABPComponentContent content,
+    public GHABPComponentUI(String id, int color, GHABPComponentContent content,
                             AbstractSurveySubComponent[] subComponents,
                             int[][] subComponentExecutePaths, boolean omitDescription) {
-        super(id, content, subComponents, subComponentExecutePaths);
+        super(id, color, content, subComponents, subComponentExecutePaths);
         this.omitDescription = omitDescription;
     }
 
@@ -44,6 +47,8 @@ public class GHABPComponentUI extends AbstractSingleSelectionSubComponent {
 
         // remove all current views from root view
         rootView.removeAllViews();
+        rootView.setBackgroundColor(getColor());
+        vibrator = (Vibrator) rootView.getContext().getSystemService(Context.VIBRATOR_SERVICE);
 
         if(omitDescription) {
             LinearLayout.LayoutParams paramFirstSpace = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 3 * display.getHeight() / 40);
@@ -181,6 +186,7 @@ public class GHABPComponentUI extends AbstractSingleSelectionSubComponent {
                 getContent().setResponse((String) buttonGroup.getSelectedButton().getText(),
                         buttonGroup.getIndexOfSelectedButton());
                 //buttonGroup.resetBackground();
+                vibrator.vibrate(250);
                 gotoNextComponent();
             } catch (NullPointerException e) {
                 Toast.makeText(activity, "Please select an option", Toast.LENGTH_SHORT).show();
@@ -198,6 +204,7 @@ public class GHABPComponentUI extends AbstractSingleSelectionSubComponent {
         public void onClick(View view) {
             //buttonGroup.resetBackground();
             resetUI();
+            vibrator.vibrate(250);
             gotoPreviousComponent();
         }
     }

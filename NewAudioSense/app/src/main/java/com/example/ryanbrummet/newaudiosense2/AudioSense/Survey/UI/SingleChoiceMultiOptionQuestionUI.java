@@ -1,8 +1,10 @@
 package com.example.ryanbrummet.newaudiosense2.AudioSense.Survey.UI;
 
 import android.app.Activity;
+import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.os.Vibrator;
 import android.util.Log;
 import android.view.Display;
 import android.view.Gravity;
@@ -30,21 +32,24 @@ public class SingleChoiceMultiOptionQuestionUI extends AbstractSingleSelectionSu
 
     private SingleSelectionButtonGroup buttonGroup;
     private final boolean omitDescription;
+    private Vibrator vibrator;
 
-    public SingleChoiceMultiOptionQuestionUI(String id, SingleChoiceMultiOptionQuestionContent content,
+    public SingleChoiceMultiOptionQuestionUI(String id, int color, SingleChoiceMultiOptionQuestionContent content,
                                              AbstractSurveySubComponent[] subComponents,
                                              int[][] subComponentExecutePaths, boolean omitDescription){
-        super(id, content, subComponents,subComponentExecutePaths);
+        super(id, color, content, subComponents,subComponentExecutePaths);
         this.omitDescription = omitDescription;
     }
 
-    public SingleChoiceMultiOptionQuestionUI(String id, SingleChoiceMultiOptionQuestionContent content, boolean omitDescription) {
-        super(id, content);
+    public SingleChoiceMultiOptionQuestionUI(String id, int color, SingleChoiceMultiOptionQuestionContent content, boolean omitDescription) {
+        super(id, color, content);
         this.omitDescription = omitDescription;
     }
 
     public void render(Activity activity, Display display, ViewGroup rootView) {
         rootView.removeAllViews();
+        rootView.setBackgroundColor(getColor());
+        vibrator = (Vibrator) rootView.getContext().getSystemService(Context.VIBRATOR_SERVICE);
 
         if(omitDescription) {
 
@@ -68,7 +73,7 @@ public class SingleChoiceMultiOptionQuestionUI extends AbstractSingleSelectionSu
                     Button optionButton = new Button(activity);
                     optionButton.setBackgroundResource(R.drawable.bluebutton);
                     optionButton.setTextColor(Color.WHITE);
-                    optionButton.setTextSize(15);
+                    optionButton.setTextSize(20);
                     optionButton.setText(((SingleChoiceMultiOptionQuestionContent) getContent()).getOptions().get(i));
                     optionButton.setTypeface(null, Typeface.BOLD);
                     optionButton.setGravity(Gravity.CENTER_VERTICAL | Gravity.CENTER_HORIZONTAL);
@@ -143,14 +148,14 @@ public class SingleChoiceMultiOptionQuestionUI extends AbstractSingleSelectionSu
                     if(((SingleChoiceMultiOptionQuestionContent) getContent()).getOptions().size() == 2) {
                         optionButton.setTextSize(30);
                     } else {
-                        optionButton.setTextSize(15);
+                        optionButton.setTextSize(20);
                     }
 
                     optionButton.setText(((SingleChoiceMultiOptionQuestionContent) getContent()).getOptions().get(i));
                     optionButton.setTypeface(null, Typeface.BOLD);
                     optionButton.setGravity(Gravity.CENTER_VERTICAL | Gravity.CENTER_HORIZONTAL);
                     optionButton.setOnClickListener(new ChangeSelection());
-                    RelativeLayout.LayoutParams paramOptionButton = new RelativeLayout.LayoutParams(2 * display.getWidth() / 3,
+                    RelativeLayout.LayoutParams paramOptionButton = new RelativeLayout.LayoutParams(9 * display.getWidth() / 10,
                             (9 * (5 * display.getHeight() / (((SingleChoiceMultiOptionQuestionContent) getContent()).getOptions().size() * 10))) / 10);
                     paramOptionButton.addRule(RelativeLayout.CENTER_HORIZONTAL);
                     RelativeLayout buttonRelativeLayout = new RelativeLayout(activity);
@@ -168,7 +173,7 @@ public class SingleChoiceMultiOptionQuestionUI extends AbstractSingleSelectionSu
                 buttonGroup = new SingleSelectionButtonGroup(buttons, R.drawable.greenbutton);
             } else {
                 for (int i = 0; i < buttonGroup.getNumberOfButtonsInGroup(); i++) {
-                    RelativeLayout.LayoutParams paramOptionButton = new RelativeLayout.LayoutParams(2 * display.getWidth() / 3,
+                    RelativeLayout.LayoutParams paramOptionButton = new RelativeLayout.LayoutParams(9 * display.getWidth() / 10,
                             (9 * (5 * display.getHeight() / (((SingleChoiceMultiOptionQuestionContent) getContent()).getOptions().size() * 10))) / 10);
                     paramOptionButton.addRule(RelativeLayout.CENTER_HORIZONTAL);
                     RelativeLayout buttonRelativeLayout = new RelativeLayout(activity);
@@ -222,6 +227,7 @@ public class SingleChoiceMultiOptionQuestionUI extends AbstractSingleSelectionSu
                 getContent().setResponse((String) buttonGroup.getSelectedButton().getText(),
                         buttonGroup.getIndexOfSelectedButton());
                 //buttonGroup.resetBackground();
+                vibrator.vibrate(250);
                 gotoNextComponent();
             } catch (NullPointerException e) {
                 Toast.makeText(activity, "Please select an option", Toast.LENGTH_SHORT).show();
@@ -240,6 +246,7 @@ public class SingleChoiceMultiOptionQuestionUI extends AbstractSingleSelectionSu
         public void onClick(View view) {
             //buttonGroup.resetBackground();
             resetUI();
+            vibrator.vibrate(250);
             gotoPreviousComponent();
         }
     }

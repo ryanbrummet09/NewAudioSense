@@ -1,6 +1,7 @@
 package com.example.ryanbrummet.newaudiosense2.AudiologyBaseSurveyCode;
 
 import android.app.Activity;
+import android.graphics.Color;
 import android.util.Log;
 import android.view.Display;
 import android.view.ViewGroup;
@@ -26,10 +27,10 @@ abstract public class AbstractSingleSelectionSubComponent extends AbstractSurvey
 
 
     // int[][] subComponentExecutePaths: first dim is number of buttons and second dim is the size of subComponents
-    public AbstractSingleSelectionSubComponent(String id, AbstractSingleSelectionContent content,
+    public AbstractSingleSelectionSubComponent(String id, int color,AbstractSingleSelectionContent content,
                                                AbstractSurveySubComponent[] subComponents,
                                                int[][] subComponentExecutePaths) {
-        super(id);
+        super(id,color);
         this.content = content;
         this.subComponents = subComponents;
         this.subComponentExecutePaths = subComponentExecutePaths;
@@ -42,8 +43,8 @@ abstract public class AbstractSingleSelectionSubComponent extends AbstractSurvey
     }
 
     // for when component has no children
-    public AbstractSingleSelectionSubComponent(String id, AbstractSingleSelectionContent content) {
-        super(id);
+    public AbstractSingleSelectionSubComponent(String id, int color, AbstractSingleSelectionContent content) {
+        super(id, color);
         this.content = content;
         this.subComponents = null;
         this.subComponentExecutePaths = null;
@@ -87,10 +88,17 @@ abstract public class AbstractSingleSelectionSubComponent extends AbstractSurvey
                 results.addAll(subComponents[i].getResults());
             }
         }
+        /*
         ArrayList<String> temp = content.getResponseContent();
         for(int i = 0; i < temp.size(); i++) {
             results.add(getComponentID() + ":" + temp.get(i));
+        }*/
+        if(content.getResponseIndex() == -1) {
+            results.add(getComponentID() + ":" + "NaN");
+        } else {
+            results.add(getComponentID() + ":" + Integer.toString(content.getResponseIndex()));
         }
+
 
         return results;
     }
